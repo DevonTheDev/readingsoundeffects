@@ -26,6 +26,9 @@ class _SpeechToTextDemoState extends State<SpeechToTextDemo> {
   bool _isListening = false;
   String _text = 'Press the button and start speaking';
 
+  // Store the recognized words
+  String _newWords = '';
+
   @override
   void initState() {
     super.initState();
@@ -49,11 +52,15 @@ class _SpeechToTextDemoState extends State<SpeechToTextDemo> {
         if (status == stt.SpeechToText.listeningStatus) {
           setState(() {
             _isListening = true;
+            // Reset the recognized words when listening starts
+            _newWords = '';
           });
         } else if (status == stt.SpeechToText.notListeningStatus) {
           setState(() {
             _isListening = false;
           });
+          // Start a new listening session when done
+          _startListening();
         }
       },
       onError: (error) {
@@ -87,8 +94,7 @@ class _SpeechToTextDemoState extends State<SpeechToTextDemo> {
             SizedBox(height: 20.0),
             ElevatedButton(
               onPressed: _toggleListening,
-              child: _isListening ? Text('Stop Listening') : Text(
-                  'Start Listening'),
+              child: _isListening ? Text('Stop Listening') : Text('Start Listening'),
             ),
           ],
         ),
@@ -98,16 +104,26 @@ class _SpeechToTextDemoState extends State<SpeechToTextDemo> {
 
   void _toggleListening() {
     if (!_isListening) {
-      _speech.listen(
-        onResult: (result) {
-          setState(() {
-            _text = result.recognizedWords;
-          });
-        },
-      );
+      _startListening();
     } else {
       _speech.stop();
+      // Refresh the whole application by popping and pushing the current route
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+        builder: (context) => SpeechToTextDemo(),
+      ));
     }
+  }
+
+  void _startListening() {
+    _speech.listen(
+      onResult: (result) {
+        setState(() {
+          _text = result.recognizedWords;
+          // Append recognized words to the new words
+          _newWords += ' ' + result.recognizedWords;
+        });
+      },
+    );
   }
 
   @override
